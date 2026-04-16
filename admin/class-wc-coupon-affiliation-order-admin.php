@@ -176,10 +176,49 @@ final class WC_Coupon_Affiliation_Order_Admin {
 		$commission_raw = $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION );
 		$commission     = '' !== $commission_raw && null !== $commission_raw ? (float) wc_format_decimal( $commission_raw ) : 0.0;
 
+		$rate_applied_raw = $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_RATE_APPLIED );
+		$rate_label       = $this->get_commission_display_rate( $user_id, $rate_applied_raw );
+
 		echo '<p><strong>' . esc_html__( 'Ambassador', 'woocommerce-coupon-affiliation' ) . '</strong><br />';
 		echo esc_html( $name ) . '</p>';
 
-		echo '<p><strong>' . esc_html__( 'Commission', 'woocommerce-coupon-affiliation' ) . '</strong><br />';
+		echo '<p><strong>' . esc_html( $rate_label['label'] ) . '</strong><br />';
 		echo wp_kses_post( wc_price( $commission ) ) . '</p>';
+	}
+
+	/**
+	 * @param string|false $rate_applied_raw Snapshot meta from order.
+	 * @return array{label:string}
+	 */
+	private function get_commission_display_rate( int $ambassador_user_id, $rate_applied_raw ): array {
+		if ( '' !== $rate_applied_raw && null !== $rate_applied_raw ) {
+			$p = (float) wc_format_decimal( $rate_applied_raw );
+			return array(
+				'label' => sprintf(
+					/* translators: %s: commission percentage number */
+					__( 'Commission (%s%%)', 'woocommerce-coupon-affiliation' ),
+					wc_format_decimal( $p )
+				),
+			);
+		}
+
+		if ( $ambassador_user_id > 0 ) {
+			$live = get_user_meta( $ambassador_user_id, WC_Coupon_Affiliation_Plugin::META_USER_AMBASSADOR_COMMISSION_RATE, true );
+			$p    = ( '' === $live || null === $live )
+				? (float) WC_Coupon_Affiliation_Plugin::DEFAULT_AMBASSADOR_COMMISSION_RATE
+				: (float) wc_format_decimal( $live );
+
+			return array(
+				'label' => sprintf(
+					/* translators: %s: commission percentage from current profile */
+					__( 'Commission (current profile: %s%%)', 'woocommerce-coupon-affiliation' ),
+					wc_format_decimal( min( 100.0, max( 0.0, $p ) ) )
+				),
+			);
+		}
+
+		return array(
+			'label' => __( 'Commission', 'woocommerce-coupon-affiliation' ),
+		);
 	}
 }

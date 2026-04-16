@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-admin.php';
+require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-ambassador-profile.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-tracking.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-order-admin.php';
 
@@ -22,12 +23,18 @@ final class WC_Coupon_Affiliation_Plugin {
 
 	public const ROLE_AMBASSADOR = 'ambassador';
 
-	/** @var float Flat commission rate (10%). */
-	public const COMMISSION_RATE = 0.1;
+	/** User meta: commission percent (0–100). Empty means use default at attribution time. */
+	public const META_USER_AMBASSADOR_COMMISSION_RATE = '_ambassador_commission_rate';
+
+	/** Default commission percent when user meta is unset. */
+	public const DEFAULT_AMBASSADOR_COMMISSION_RATE = 20;
 
 	public const META_ORDER_AMBASSADOR_ID = '_order_ambassador_id';
 
 	public const META_ORDER_AMBASSADOR_COMMISSION = '_order_ambassador_commission';
+
+	/** Snapshot of percent used when order was attributed (for admin display). */
+	public const META_ORDER_COMMISSION_RATE_APPLIED = '_order_ambassador_commission_rate_applied';
 
 	/** Bookkeeping: attribution has run for this order (idempotency). */
 	public const META_SALES_ATTRIBUTION_DONE = '_wcca_sales_attribution_done';
@@ -71,6 +78,7 @@ final class WC_Coupon_Affiliation_Plugin {
 
 	private function __construct() {
 		new WC_Coupon_Affiliation_Admin();
+		new WC_Coupon_Affiliation_Ambassador_Profile();
 		new WC_Coupon_Affiliation_Order_Tracking();
 		new WC_Coupon_Affiliation_Order_Admin();
 	}

@@ -52,17 +52,24 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 
 		$ambassador_user_id = $this->resolve_ambassador_from_coupons( $order );
 
-		$total   = (float) $order->get_total();
-		$rate    = WC_Coupon_Affiliation_Plugin::COMMISSION_RATE;
-		$amount  = $ambassador_user_id > 0 ? ( $total * $rate ) : 0.0;
-		$commission = wc_format_decimal( $amount );
+		// Net commission base: subtotal minus order discounts (excludes tax and shipping for typical WC orders).
+		$net_base = max( 0.0, (float) $order->get_subtotal() - (float) $order->get_discount_total() );
 
 		if ( $ambassador_user_id > 0 ) {
+			$percent    = $this->get_ambassador_commission_percent( $ambassador_user_id );
+			$amount     = $net_base * ( $percent / 100.0 );
+			$commission = wc_format_decimal( $amount );
+
 			$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID, $ambassador_user_id );
 			$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION, $commission );
+			$order->update_meta_data(
+				WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_RATE_APPLIED,
+				wc_format_decimal( $percent )
+			);
 		} else {
 			$order->delete_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID );
 			$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION, wc_format_decimal( 0 ) );
+			$order->delete_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_RATE_APPLIED );
 		}
 
 		$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_SALES_ATTRIBUTION_DONE, '1' );
@@ -102,5 +109,18 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Effective commission percent for an ambassador (0–100).
+	 */
+	private function get_ambassador_commission_percent( int $user_id ): float {
+		$raw = get_user_meta( $user_id, WC_Coupon_Affiliation_Plugin::META_USER_AMBASSADOR_COMMISSION_RATE, true );
+		if ( '' === $raw || null === $raw ) {
+			return (float) WC_Coupon_Affiliation_Plugin::DEFAULT_AMBASSADOR_COMMISSION_RATE;
+		}
+
+		$percent = (float) wc_format_decimal( $raw );
+		return min( 100.0, max( 0.0, $percent ) );
 	}
 }
