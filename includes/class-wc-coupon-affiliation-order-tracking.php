@@ -55,6 +55,8 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 		// Net commission base: subtotal minus order discounts (excludes tax and shipping for typical WC orders).
 		$net_base = max( 0.0, (float) $order->get_subtotal() - (float) $order->get_discount_total() );
 
+		$commission = wc_format_decimal( 0 );
+
 		if ( $ambassador_user_id > 0 ) {
 			$percent    = $this->get_ambassador_commission_percent( $ambassador_user_id );
 			$amount     = $net_base * ( $percent / 100.0 );
@@ -74,6 +76,105 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 
 		$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_SALES_ATTRIBUTION_DONE, '1' );
 		$order->save();
+
+		if ( $ambassador_user_id > 0 ) {
+			$this->notify_ambassador_commission_email( $order, $ambassador_user_id, $net_base, $commission );
+		}
+	}
+
+	/**
+	 * Notify ambassador by email (first attribution only; caller ensures ambassador > 0).
+	 *
+	 * @param string $commission_decimal Formatted decimal string stored on the order.
+	 */
+	private function notify_ambassador_commission_email( WC_Order $order, int $ambassador_user_id, float $net_base, string $commission_decimal ): void {
+		$user = get_userdata( $ambassador_user_id );
+		if ( ! $user || empty( $user->user_email ) || ! is_email( $user->user_email ) ) {
+			error_log(
+				sprintf(
+					'[WCCA] Commission email skipped: invalid or missing email (order_id=%d, ambassador_user=%d).',
+					$order->get_id(),
+					$ambassador_user_id
+				)
+			);
+			return;
+		}
+
+		$order_ref = $order->get_order_number();
+		$subject   = sprintf(
+			/* translators: %s: order number */
+			__( 'New Commission Earned! (Order #%s)', 'woocommerce-coupon-affiliation' ),
+			$order_ref
+		);
+
+		$currency = $order->get_currency();
+		$net_html = wc_price( $net_base, array( 'currency' => $currency ) );
+		$comm_amt = (float) wc_format_decimal( $commission_decimal );
+		$comm_html = wc_price( $comm_amt, array( 'currency' => $currency ) );
+
+		$account_url = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'myaccount' ) : '';
+		$dashboard   = '';
+		if ( $account_url ) {
+			$dashboard = wc_get_endpoint_url( 'ambassador-stats', '', $account_url );
+		}
+
+		$body_lines = array(
+			sprintf(
+				/* translators: %s: ambassador display name */
+				__( 'Hello %s,', 'woocommerce-coupon-affiliation' ),
+				$user->display_name
+			),
+			'',
+			sprintf(
+				/* translators: %s: order number */
+				__( 'Great news! An order (#%s) using your coupon has been completed.', 'woocommerce-coupon-affiliation' ),
+				$order_ref
+			),
+			sprintf(
+				/* translators: %s: formatted price (plain text) */
+				__( 'Net Order Value: %s', 'woocommerce-coupon-affiliation' ),
+				wp_strip_all_tags( $net_html )
+			),
+			sprintf(
+				/* translators: %s: formatted price (plain text) */
+				__( 'Your Commission: %s', 'woocommerce-coupon-affiliation' ),
+				wp_strip_all_tags( $comm_html )
+			),
+		);
+
+		if ( $dashboard ) {
+			$body_lines[] = '';
+			$body_lines[] = sprintf(
+				/* translators: %s: URL to ambassador panel */
+				__( 'Check your dashboard for details: %s', 'woocommerce-coupon-affiliation' ),
+				$dashboard
+			);
+		} else {
+			error_log( '[WCCA] Commission email: my account permalink missing; dashboard URL omitted.' );
+		}
+
+		$body    = implode( "\n", $body_lines );
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		$sent = wp_mail( $user->user_email, $subject, $body, $headers );
+
+		if ( $sent ) {
+			error_log(
+				sprintf(
+					'[WCCA] Commission email sent order_id=%d ambassador_user=%d',
+					$order->get_id(),
+					$ambassador_user_id
+				)
+			);
+		} else {
+			error_log(
+				sprintf(
+					'[WCCA] Commission email FAILED order_id=%d ambassador_user=%d',
+					$order->get_id(),
+					$ambassador_user_id
+				)
+			);
+		}
 	}
 
 	/**
