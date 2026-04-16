@@ -1,3 +1,8 @@
 node_modules/
-.wp-env.json
 .DS_Store
+
+# Lokalne nadpisania środowiska (Tego nie commitujemy)
+.wp-env.override.json
+
+# Logi błędów WordPressa (często pojawiają się w trakcie pracy)
+debug.log
