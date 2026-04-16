@@ -14,6 +14,7 @@ require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-ambassador
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-tracking.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-order-admin.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-ambassador-dashboard.php';
+require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-payouts-admin.php';
 
 /**
  * Main plugin bootstrap: loads admin integration when WooCommerce is active.
@@ -39,6 +40,13 @@ final class WC_Coupon_Affiliation_Plugin {
 
 	/** Bookkeeping: attribution has run for this order (idempotency). */
 	public const META_SALES_ATTRIBUTION_DONE = '_wcca_sales_attribution_done';
+
+	/** Admin payout: unpaid | paid (lowercase). */
+	public const META_ORDER_COMMISSION_PAYOUT_STATUS = '_commission_payout_status';
+
+	public const PAYOUT_STATUS_UNPAID = 'unpaid';
+
+	public const PAYOUT_STATUS_PAID = 'paid';
 
 	/**
 	 * Singleton instance.
@@ -84,5 +92,6 @@ final class WC_Coupon_Affiliation_Plugin {
 		new WC_Coupon_Affiliation_Order_Tracking();
 		new WC_Coupon_Affiliation_Order_Admin();
 		new WC_Coupon_Affiliation_Ambassador_Dashboard();
+		new WC_Coupon_Affiliation_Payouts_Admin();
 	}
 }

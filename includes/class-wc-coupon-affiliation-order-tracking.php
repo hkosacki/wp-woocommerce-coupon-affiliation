@@ -68,10 +68,12 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 				WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_RATE_APPLIED,
 				wc_format_decimal( $percent )
 			);
+			$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS, WC_Coupon_Affiliation_Plugin::PAYOUT_STATUS_UNPAID );
 		} else {
 			$order->delete_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID );
 			$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION, wc_format_decimal( 0 ) );
 			$order->delete_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_RATE_APPLIED );
+			$order->delete_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS );
 		}
 
 		$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_SALES_ATTRIBUTION_DONE, '1' );
