@@ -1,0 +1,15 @@
+{
+  "name": "wp-woocommerce-coupon-affiliation",
+  "version": "0.0.1",
+  "description": "System śledzenia sprzedaży dla ambasadorów WooCommerce",
+  "main": "coupon-affiliation-plugin.php",
+  "scripts": {
+    "start": "wp-env start",
+    "stop": "wp-env stop",
+    "clean": "wp-env clean-all",
+    "update": "wp-env start --update"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^11.4.0"
+  }
+}
