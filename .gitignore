@@ -1,6 +1,9 @@
 node_modules/
 .DS_Store
 
+# Release artifact (npm run build)
+wp-woocommerce-coupon-affiliation.zip
+
 # Lokalne nadpisania środowiska (Tego nie commitujemy)
 .wp-env.override.json
 

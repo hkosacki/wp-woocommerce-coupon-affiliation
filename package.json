@@ -7,9 +7,11 @@
     "start": "wp-env start",
     "stop": "wp-env stop",
     "clean": "wp-env clean-all",
-    "update": "wp-env start --update"
+    "update": "wp-env start --update",
+    "build": "node build-zip.js"
   },
   "devDependencies": {
-    "@wordpress/env": "^11.4.0"
+    "@wordpress/env": "^11.4.0",
+    "archiver": "^7.0.1"
   }
 }
