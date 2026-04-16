@@ -13,6 +13,7 @@ require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-admin.php'
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-ambassador-profile.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-tracking.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-order-admin.php';
+require_once __DIR__ . '/class-wc-coupon-affiliation-ambassador-dashboard.php';
 
 /**
  * Main plugin bootstrap: loads admin integration when WooCommerce is active.
@@ -57,23 +58,24 @@ final class WC_Coupon_Affiliation_Plugin {
 	}
 
 	/**
-	 * Register Ambassador role (same capabilities as Subscriber).
+	 * Register Ambassador role (same capabilities as Subscriber) and My Account rewrites.
 	 */
 	public static function activate(): void {
-		if ( get_role( self::ROLE_AMBASSADOR ) ) {
-			return;
+		if ( ! get_role( self::ROLE_AMBASSADOR ) ) {
+			$subscriber = get_role( 'subscriber' );
+			$caps       = ( $subscriber && is_array( $subscriber->capabilities ) )
+				? $subscriber->capabilities
+				: array( 'read' => true );
+
+			add_role(
+				self::ROLE_AMBASSADOR,
+				__( 'Ambassador', 'woocommerce-coupon-affiliation' ),
+				$caps
+			);
 		}
 
-		$subscriber = get_role( 'subscriber' );
-		$caps       = ( $subscriber && is_array( $subscriber->capabilities ) )
-			? $subscriber->capabilities
-			: array( 'read' => true );
-
-		add_role(
-			self::ROLE_AMBASSADOR,
-			__( 'Ambassador', 'woocommerce-coupon-affiliation' ),
-			$caps
-		);
+		WC_Coupon_Affiliation_Ambassador_Dashboard::register_rewrite_endpoint();
+		flush_rewrite_rules( true );
 	}
 
 	private function __construct() {
@@ -81,5 +83,6 @@ final class WC_Coupon_Affiliation_Plugin {
 		new WC_Coupon_Affiliation_Ambassador_Profile();
 		new WC_Coupon_Affiliation_Order_Tracking();
 		new WC_Coupon_Affiliation_Order_Admin();
+		new WC_Coupon_Affiliation_Ambassador_Dashboard();
 	}
 }

@@ -1,0 +1,60 @@
+.wcca-ambassador-dashboard {
+	margin-bottom: 2em;
+}
+
+.wcca-month-form {
+	margin-bottom: 1.5em;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5em 1em;
+}
+
+.wcca-month-form__label {
+	font-weight: 600;
+}
+
+.wcca-month-form__select {
+	max-width: 100%;
+}
+
+.wcca-summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+	gap: 1rem;
+	margin-bottom: 1.5em;
+}
+
+.wcca-summary__item {
+	padding: 0.75rem 1rem;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.02);
+}
+
+.wcca-summary__label {
+	display: block;
+	font-size: 0.85em;
+	margin-bottom: 0.35em;
+	color: inherit;
+	opacity: 0.85;
+}
+
+.wcca-summary__value {
+	font-size: 1.15em;
+	font-weight: 600;
+}
+
+.wcca-orders-table .wcca-table-checkbox {
+	text-align: center;
+}
+
+.wcca-orders-table .wcca-table-checkbox input[type="checkbox"] {
+	margin: 0;
+	vertical-align: middle;
+}
+
+.wcca-commission-rate {
+	font-size: 0.9em;
+	opacity: 0.9;
+}
