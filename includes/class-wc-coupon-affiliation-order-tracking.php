@@ -18,6 +18,41 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 
 	public function __construct() {
 		add_action( 'woocommerce_order_status_completed', array( $this, 'on_order_completed' ), 10, 2 );
+		add_action( 'woocommerce_order_status_changed', array( $this, 'on_order_status_changed' ), 10, 4 );
+	}
+
+	/**
+	 * Zero ambassador commission when the order becomes unsuccessful (cancelled, refunded, failed).
+	 *
+	 * @param int            $order_id   Order ID.
+	 * @param string         $old_status Status without wc- prefix.
+	 * @param string         $new_status Status without wc- prefix.
+	 * @param \WC_Order|null $order      Order instance when available.
+	 */
+	public function on_order_status_changed( $order_id, $old_status, $new_status, $order = null ): void {
+		$new = is_string( $new_status ) ? str_replace( 'wc-', '', $new_status ) : '';
+		if ( ! in_array( $new, array( 'refunded', 'cancelled', 'failed' ), true ) ) {
+			return;
+		}
+
+		if ( $order instanceof WC_Order ) {
+			$wc_order = $order;
+		} else {
+			$wc_order = wc_get_order( absint( $order_id ) );
+		}
+
+		if ( ! $wc_order instanceof WC_Order ) {
+			return;
+		}
+
+		$aid = absint( $wc_order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID ) );
+		if ( $aid <= 0 ) {
+			return;
+		}
+
+		$wc_order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION, wc_format_decimal( 0 ) );
+		$wc_order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS, WC_Coupon_Affiliation_Plugin::PAYOUT_STATUS_VOID );
+		$wc_order->save();
 	}
 
 	/**

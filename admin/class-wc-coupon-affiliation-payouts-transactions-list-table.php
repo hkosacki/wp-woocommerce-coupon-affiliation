@@ -95,8 +95,6 @@ final class WC_Coupon_Affiliation_Payouts_Transactions_List_Table extends WP_Lis
 				$raw = $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION );
 				$amt = (float) wc_format_decimal( $raw );
 				return wp_kses_post( wc_price( $amt, array( 'currency' => $order->get_currency() ) ) );
-			case 'status':
-				return esc_html( WC_Coupon_Affiliation_Payouts_Admin::get_payout_status_label( $order ) );
 			default:
 				return '';
 		}
@@ -105,8 +103,32 @@ final class WC_Coupon_Affiliation_Payouts_Transactions_List_Table extends WP_Lis
 	/**
 	 * @param \WC_Order $order Order.
 	 */
+	protected function column_status( $order ): string {
+		if ( ! $order instanceof WC_Order ) {
+			return '';
+		}
+
+		if ( WC_Coupon_Affiliation_Plugin::is_void_payout_status( $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS ) ) ) {
+			return '<span class="wcca-payout-status-void">' . esc_html( WC_Coupon_Affiliation_Plugin::get_commission_payout_status_label( $order ) ) . '</span>';
+		}
+
+		if ( WC_Coupon_Affiliation_Plugin::is_order_wc_terminal_for_commission( $order ) ) {
+			return '<span class="wcca-payout-status-void">' . esc_html__( 'Not payable', 'woocommerce-coupon-affiliation' ) . '</span>';
+		}
+
+		return esc_html( WC_Coupon_Affiliation_Payouts_Admin::get_payout_status_label( $order ) );
+	}
+
+	/**
+	 * @param \WC_Order $order Order.
+	 */
 	protected function column_actions( $order ): void {
 		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
+		if ( WC_Coupon_Affiliation_Plugin::order_blocks_manual_payout_edit( $order ) ) {
+			echo '&mdash;';
 			return;
 		}
 

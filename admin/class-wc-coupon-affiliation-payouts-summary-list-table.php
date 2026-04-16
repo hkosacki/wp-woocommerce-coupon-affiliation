@@ -14,7 +14,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 }
 
 /**
- * @phpstan-type SummaryRow array{month:string,ambassador_id:int,ambassador_name:string,total:float,unpaid:float,paid:float,order_count:int}
+ * @phpstan-type SummaryRow array{month:string,ambassador_id:int,ambassador_name:string,unpaid:float,paid:float,order_count:int}
  */
 final class WC_Coupon_Affiliation_Payouts_Summary_List_Table extends WP_List_Table {
 
@@ -42,11 +42,10 @@ final class WC_Coupon_Affiliation_Payouts_Summary_List_Table extends WP_List_Tab
 
 	public function get_columns(): array {
 		return array(
-			'month'             => __( 'Month', 'woocommerce-coupon-affiliation' ),
-			'ambassador'        => __( 'Ambassador', 'woocommerce-coupon-affiliation' ),
-			'commission_total'  => __( 'Commission total', 'woocommerce-coupon-affiliation' ),
-			'unpaid'            => __( 'Unpaid', 'woocommerce-coupon-affiliation' ),
-			'paid'              => __( 'Paid', 'woocommerce-coupon-affiliation' ),
+			'month'               => __( 'Month', 'woocommerce-coupon-affiliation' ),
+			'ambassador'          => __( 'Ambassador', 'woocommerce-coupon-affiliation' ),
+			'commission_payable'  => __( 'Commission payable', 'woocommerce-coupon-affiliation' ),
+			'paid'                => __( 'Paid', 'woocommerce-coupon-affiliation' ),
 			'order_count'       => __( 'Orders', 'woocommerce-coupon-affiliation' ),
 			'actions'           => __( 'Actions', 'woocommerce-coupon-affiliation' ),
 		);
@@ -67,9 +66,7 @@ final class WC_Coupon_Affiliation_Payouts_Summary_List_Table extends WP_List_Tab
 				return esc_html( $ts ? wp_date( 'F Y', $ts, wp_timezone() ) : $item['month'] );
 			case 'ambassador':
 				return esc_html( $item['ambassador_name'] );
-			case 'commission_total':
-				return wp_kses_post( wc_price( $item['total'] ) );
-			case 'unpaid':
+			case 'commission_payable':
 				return wp_kses_post( wc_price( $item['unpaid'] ) );
 			case 'paid':
 				return wp_kses_post( wc_price( $item['paid'] ) );

@@ -149,7 +149,7 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 			'limit'      => self::QUERY_HARD_LIMIT,
 			'orderby'    => 'date',
 			'order'      => 'DESC',
-			'status'     => array( 'completed', 'refunded', 'cancelled' ),
+			'status'     => array( 'completed', 'refunded', 'cancelled', 'failed' ),
 			'meta_query' => array(
 				array(
 					'key'   => WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID,
@@ -207,11 +207,15 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 	}
 
 	/**
-	 * Non-payable: cancelled/refunded status, or full refund (partial refunds do not zero commission).
+	 * Non-payable: void payout meta, cancelled/refunded/failed, or full refund (partial refunds do not zero commission).
 	 */
 	private function is_order_nonpayable( WC_Order $order ): bool {
+		if ( WC_Coupon_Affiliation_Plugin::is_void_payout_status( $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS ) ) ) {
+			return true;
+		}
+
 		$status = $order->get_status();
-		if ( in_array( $status, array( 'cancelled', 'refunded' ), true ) ) {
+		if ( in_array( $status, array( 'cancelled', 'refunded', 'failed' ), true ) ) {
 			return true;
 		}
 
@@ -316,7 +320,7 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 		echo '<th>' . esc_html__( 'Order date / time', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '<th>' . esc_html__( 'Net value', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '<th>' . esc_html__( 'Commission', 'woocommerce-coupon-affiliation' ) . '</th>';
-		echo '<th>' . esc_html__( 'Was returned / cancelled', 'woocommerce-coupon-affiliation' ) . '</th>';
+		echo '<th>' . esc_html__( 'Payout status', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '<th>' . esc_html__( 'Coupon code(s)', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '</tr></thead><tbody>';
 
@@ -353,6 +357,17 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 		}
 
 		$nonpay = $this->is_order_nonpayable( $order );
+		if ( WC_Coupon_Affiliation_Plugin::is_void_payout_status( $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS ) ) ) {
+			$payout_label = WC_Coupon_Affiliation_Plugin::get_commission_payout_status_label( $order );
+		} elseif ( $nonpay ) {
+			$payout_label = __( 'Not payable', 'woocommerce-coupon-affiliation' );
+		} else {
+			$payout_label = WC_Coupon_Affiliation_Plugin::get_commission_payout_status_label( $order );
+		}
+		$payout_cell = $nonpay
+			? '<span class="wcca-payout-void">' . esc_html( $payout_label ) . '</span>'
+			: esc_html( $payout_label );
+
 		$coupons = $order->get_coupon_codes();
 		$coupon_str = ! empty( $coupons ) ? esc_html( implode( ', ', $coupons ) ) : '&mdash;';
 
@@ -361,11 +376,9 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 		echo '<td data-title="' . esc_attr__( 'Order date / time', 'woocommerce-coupon-affiliation' ) . '">' . esc_html( $dt ) . '</td>';
 		echo '<td data-title="' . esc_attr__( 'Net value', 'woocommerce-coupon-affiliation' ) . '">' . wp_kses_post( wc_price( $net ) ) . '</td>';
 		echo '<td data-title="' . esc_attr__( 'Commission', 'woocommerce-coupon-affiliation' ) . '">' . $commission_html . '</td>';
-		echo '<td data-title="' . esc_attr__( 'Was returned / cancelled', 'woocommerce-coupon-affiliation' ) . '" class="wcca-table-checkbox">';
-		printf(
-			'<input type="checkbox" disabled %s />',
-			$nonpay ? 'checked="checked"' : ''
-		);
+		echo '<td data-title="' . esc_attr__( 'Payout status', 'woocommerce-coupon-affiliation' ) . '">';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $payout_cell built from escaped parts.
+		echo $payout_cell;
 		echo '</td>';
 		echo '<td data-title="' . esc_attr__( 'Coupon code(s)', 'woocommerce-coupon-affiliation' ) . '">' . $coupon_str . '</td>';
 		echo '</tr>';

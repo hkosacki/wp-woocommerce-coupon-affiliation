@@ -41,12 +41,73 @@ final class WC_Coupon_Affiliation_Plugin {
 	/** Bookkeeping: attribution has run for this order (idempotency). */
 	public const META_SALES_ATTRIBUTION_DONE = '_wcca_sales_attribution_done';
 
-	/** Admin payout: unpaid | paid (lowercase). */
+	/** Admin payout: unpaid | paid | void (lowercase). void = unsuccessful order; commission 0. */
 	public const META_ORDER_COMMISSION_PAYOUT_STATUS = '_commission_payout_status';
 
 	public const PAYOUT_STATUS_UNPAID = 'unpaid';
 
 	public const PAYOUT_STATUS_PAID = 'paid';
+
+	public const PAYOUT_STATUS_VOID = 'void';
+
+	public static function is_void_payout_status( $meta ): bool {
+		return self::PAYOUT_STATUS_VOID === ( is_string( $meta ) ? $meta : '' );
+	}
+
+	public static function is_order_wc_terminal_for_commission( WC_Order $order ): bool {
+		return in_array( $order->get_status(), array( 'cancelled', 'refunded', 'failed' ), true );
+	}
+
+	public static function get_order_ambassador_commission_float( WC_Order $order ): float {
+		$raw = $order->get_meta( self::META_ORDER_AMBASSADOR_COMMISSION );
+		if ( '' === $raw || null === $raw ) {
+			return 0.0;
+		}
+		return (float) wc_format_decimal( $raw );
+	}
+
+	/**
+	 * Payable unpaid: positive commission, not paid, not void, WC status still successful.
+	 */
+	public static function counts_toward_unpaid_payable_total( WC_Order $order ): bool {
+		if ( self::is_order_wc_terminal_for_commission( $order ) ) {
+			return false;
+		}
+		if ( self::is_void_payout_status( $order->get_meta( self::META_ORDER_COMMISSION_PAYOUT_STATUS ) ) ) {
+			return false;
+		}
+		$meta = $order->get_meta( self::META_ORDER_COMMISSION_PAYOUT_STATUS );
+		if ( self::PAYOUT_STATUS_PAID === $meta ) {
+			return false;
+		}
+		return self::get_order_ambassador_commission_float( $order ) > 0.0;
+	}
+
+	public static function counts_toward_paid_total( WC_Order $order ): bool {
+		if ( self::is_order_wc_terminal_for_commission( $order ) ) {
+			return false;
+		}
+		if ( self::PAYOUT_STATUS_PAID !== $order->get_meta( self::META_ORDER_COMMISSION_PAYOUT_STATUS ) ) {
+			return false;
+		}
+		return self::get_order_ambassador_commission_float( $order ) > 0.0;
+	}
+
+	public static function order_blocks_manual_payout_edit( WC_Order $order ): bool {
+		return self::is_order_wc_terminal_for_commission( $order )
+			|| self::is_void_payout_status( $order->get_meta( self::META_ORDER_COMMISSION_PAYOUT_STATUS ) );
+	}
+
+	public static function get_commission_payout_status_label( WC_Order $order ): string {
+		$raw = $order->get_meta( self::META_ORDER_COMMISSION_PAYOUT_STATUS );
+		if ( self::PAYOUT_STATUS_VOID === $raw ) {
+			return __( 'Void', 'woocommerce-coupon-affiliation' );
+		}
+		if ( self::PAYOUT_STATUS_PAID === $raw ) {
+			return __( 'Paid', 'woocommerce-coupon-affiliation' );
+		}
+		return __( 'Unpaid', 'woocommerce-coupon-affiliation' );
+	}
 
 	/**
 	 * Singleton instance.

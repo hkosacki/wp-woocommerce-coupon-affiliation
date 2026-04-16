@@ -30,16 +30,23 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 		}
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 60 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_payouts_admin_assets' ) );
 		add_action( 'admin_post_wcca_mark_commission_payout', array( $this, 'handle_mark_order_payout' ) );
 		add_action( 'admin_post_wcca_mark_month_payout', array( $this, 'handle_mark_month_payout' ) );
 	}
 
-	public static function get_payout_status_label( WC_Order $order ): string {
-		$raw = $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS );
-		if ( WC_Coupon_Affiliation_Plugin::PAYOUT_STATUS_PAID === $raw ) {
-			return __( 'Paid', 'woocommerce-coupon-affiliation' );
+	public function enqueue_payouts_admin_assets( string $hook_suffix ): void {
+		if ( 'woocommerce_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+			return;
 		}
-		return __( 'Unpaid', 'woocommerce-coupon-affiliation' );
+		wp_add_inline_style(
+			'common',
+			'.wcca-payout-status-void{color:#b32d2e;font-weight:600;}'
+		);
+	}
+
+	public static function get_payout_status_label( WC_Order $order ): string {
+		return WC_Coupon_Affiliation_Plugin::get_commission_payout_status_label( $order );
 	}
 
 	public static function is_payout_paid( WC_Order $order ): bool {
@@ -154,8 +161,7 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 					continue;
 				}
 
-				$commission = (float) wc_format_decimal( $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_COMMISSION ) );
-				$paid_flag  = self::is_payout_paid( $order );
+				$commission = WC_Coupon_Affiliation_Plugin::get_order_ambassador_commission_float( $order );
 
 				$include_in_totals = true;
 				if ( $filter_month && $ym !== $filter_month ) {
@@ -165,9 +171,9 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 					$include_in_totals = false;
 				}
 				if ( $include_in_totals ) {
-					if ( $paid_flag ) {
+					if ( WC_Coupon_Affiliation_Plugin::counts_toward_paid_total( $order ) ) {
 						$totals['paid'] += $commission;
-					} else {
+					} elseif ( WC_Coupon_Affiliation_Plugin::counts_toward_unpaid_payable_total( $order ) ) {
 						$totals['unpaid'] += $commission;
 					}
 				}
@@ -190,17 +196,15 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 						'month'           => $ym,
 						'ambassador_id'   => $aid,
 						'ambassador_name' => $user ? $user->display_name : (string) $aid,
-						'total'           => 0.0,
 						'unpaid'          => 0.0,
 						'paid'            => 0.0,
 						'order_count'     => 0,
 					);
 				}
-				$buckets[ $key ]['total'] += $commission;
 				$buckets[ $key ]['order_count']++;
-				if ( $paid_flag ) {
+				if ( WC_Coupon_Affiliation_Plugin::counts_toward_paid_total( $order ) ) {
 					$buckets[ $key ]['paid'] += $commission;
-				} else {
+				} elseif ( WC_Coupon_Affiliation_Plugin::counts_toward_unpaid_payable_total( $order ) ) {
 					$buckets[ $key ]['unpaid'] += $commission;
 				}
 			}
@@ -340,6 +344,9 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 				if ( self::is_payout_paid( $order ) ) {
 					continue;
 				}
+				if ( ! WC_Coupon_Affiliation_Plugin::counts_toward_unpaid_payable_total( $order ) ) {
+					continue;
+				}
 				$order->update_meta_data( WC_Coupon_Affiliation_Plugin::META_ORDER_COMMISSION_PAYOUT_STATUS, WC_Coupon_Affiliation_Plugin::PAYOUT_STATUS_PAID );
 				$order->save();
 			}
@@ -423,7 +430,7 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 		$this->render_notices();
 
 		echo '<div class="wcca-payout-stats" style="display:flex;gap:2rem;margin:1em 0;">';
-		echo '<div><strong>' . esc_html__( 'Total unpaid (filtered)', 'woocommerce-coupon-affiliation' ) . '</strong><br />';
+		echo '<div><strong>' . esc_html__( 'Total commission payable (filtered)', 'woocommerce-coupon-affiliation' ) . '</strong><br />';
 		echo wp_kses_post( wc_price( $totals['unpaid'] ) ) . '</div>';
 		echo '<div><strong>' . esc_html__( 'Total paid (filtered)', 'woocommerce-coupon-affiliation' ) . '</strong><br />';
 		echo wp_kses_post( wc_price( $totals['paid'] ) ) . '</div>';
@@ -562,6 +569,13 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 		$aid = absint( $order->get_meta( WC_Coupon_Affiliation_Plugin::META_ORDER_AMBASSADOR_ID ) );
 		if ( $aid <= 0 ) {
 			wp_safe_redirect( $this->redirect_transactions_url( '', 0, 'error' ) );
+			exit;
+		}
+
+		if ( WC_Coupon_Affiliation_Plugin::order_blocks_manual_payout_edit( $order ) ) {
+			$month = preg_match( '/^\d{4}-\d{2}$/', $req_month ) ? $req_month : self::get_order_bucket_month( $order );
+			$amb   = null !== $req_amb ? $req_amb : $aid;
+			wp_safe_redirect( $this->redirect_transactions_url( $month, $amb, 'error' ) );
 			exit;
 		}
 
