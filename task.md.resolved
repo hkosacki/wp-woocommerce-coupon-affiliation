@@ -1,0 +1,5 @@
+- `[x]` Create plugin settings page (`admin/class-wc-coupon-affiliation-settings.php`) to store Mailerlite API Token.
+- `[x]` Update `includes/class-wc-coupon-affiliation-plugin.php` to include the new settings page class.
+- `[x]` Update `admin/class-wc-coupon-affiliation-ambassador-profile.php` to add the Mailerlite Group IDs field.
+- `[x]` Update `includes/class-wc-coupon-affiliation-order-tracking.php` to check Mailerlite tags before coupons using the API token and the customer's billing email.
+- `[x]` Create walkthrough.md.

@@ -25,6 +25,8 @@ final class WC_Coupon_Affiliation_Plugin {
 
 	public const ROLE_AMBASSADOR = 'ambassador';
 
+	public const META_USER_MAILERLITE_GROUP_IDS = '_ambassador_mailerlite_group_ids';
+
 	/** User meta: commission percent (0–100). Empty means use default at attribution time. */
 	public const META_USER_AMBASSADOR_COMMISSION_RATE = '_ambassador_commission_rate';
 
@@ -154,5 +156,16 @@ final class WC_Coupon_Affiliation_Plugin {
 		new WC_Coupon_Affiliation_Order_Admin();
 		new WC_Coupon_Affiliation_Ambassador_Dashboard();
 		new WC_Coupon_Affiliation_Payouts_Admin();
+
+		add_filter( 'woocommerce_get_settings_pages', array( $this, 'add_settings_page' ) );
+	}
+
+	/**
+	 * @param \WC_Settings_Page[] $settings
+	 * @return \WC_Settings_Page[]
+	 */
+	public function add_settings_page( $settings ) {
+		$settings[] = include dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-settings.php';
+		return $settings;
 	}
 }

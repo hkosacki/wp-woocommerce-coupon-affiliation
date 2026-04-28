@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class WC_Coupon_Affiliation_Ambassador_Profile {
 
 	private const POST_FIELD = 'wcca_ambassador_commission_rate';
+	private const POST_FIELD_MAILERLITE = 'wcca_ambassador_mailerlite_group_ids';
 
 	public function __construct() {
 		if ( ! is_admin() ) {
@@ -49,6 +50,9 @@ final class WC_Coupon_Affiliation_Ambassador_Profile {
 			: (string) wc_format_decimal( (float) $raw );
 
 		wp_nonce_field( 'wcca_save_ambassador_commission_' . $user->ID, 'wcca_ambassador_commission_nonce' );
+
+		$mailerlite_raw = get_user_meta( $user->ID, WC_Coupon_Affiliation_Plugin::META_USER_MAILERLITE_GROUP_IDS, true );
+		$mailerlite_val = is_string( $mailerlite_raw ) ? $mailerlite_raw : '';
 		?>
 		<h2><?php esc_html_e( 'Ambassador', 'woocommerce-coupon-affiliation' ); ?></h2>
 		<table class="form-table" role="presentation">
@@ -71,6 +75,25 @@ final class WC_Coupon_Affiliation_Ambassador_Profile {
 					/>
 					<p class="description">
 						<?php esc_html_e( 'Default is 20% if left empty on save. Commission is calculated from order subtotal minus discounts (excludes tax and shipping).', 'woocommerce-coupon-affiliation' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="<?php echo esc_attr( self::POST_FIELD_MAILERLITE ); ?>">
+						<?php esc_html_e( 'Mailerlite Group IDs', 'woocommerce-coupon-affiliation' ); ?>
+					</label>
+				</th>
+				<td>
+					<input
+						type="text"
+						name="<?php echo esc_attr( self::POST_FIELD_MAILERLITE ); ?>"
+						id="<?php echo esc_attr( self::POST_FIELD_MAILERLITE ); ?>"
+						value="<?php echo esc_attr( $mailerlite_val ); ?>"
+						class="regular-text"
+					/>
+					<p class="description">
+						<?php esc_html_e( 'Comma-separated list of Mailerlite Group IDs. If a customer ordering in the store belongs to one of these groups, the order will be automatically attributed to this ambassador.', 'woocommerce-coupon-affiliation' ); ?>
 					</p>
 				</td>
 			</tr>
@@ -105,5 +128,10 @@ final class WC_Coupon_Affiliation_Ambassador_Profile {
 
 		$percent = min( 100.0, max( 0.0, $percent ) );
 		update_user_meta( $user_id, WC_Coupon_Affiliation_Plugin::META_USER_AMBASSADOR_COMMISSION_RATE, wc_format_decimal( $percent ) );
+
+		if ( isset( $_POST[ self::POST_FIELD_MAILERLITE ] ) ) {
+			$mailerlite_ids = sanitize_text_field( wp_unslash( $_POST[ self::POST_FIELD_MAILERLITE ] ) );
+			update_user_meta( $user_id, WC_Coupon_Affiliation_Plugin::META_USER_MAILERLITE_GROUP_IDS, $mailerlite_ids );
+		}
 	}
 }

@@ -1,0 +1,35 @@
+# Mailerlite Integration for Coupon Affiliation
+
+The Mailerlite integration has been successfully implemented and acts as the primary attribution method for WooCommerce orders. If an order cannot be attributed via Mailerlite, the system falls back to checking the coupon codes used in the order.
+
+## What changed?
+
+### 1. Configuration Settings Added
+We created a new WooCommerce settings tab specifically for the affiliation plugin:
+- Navigate to **WooCommerce -> Settings -> Affiliation**.
+- Here you can configure your **Mailerlite API Token (v3)**. If this field is left empty, the Mailerlite attribution logic is skipped.
+
+### 2. Ambassador Profile Extended
+We extended the WordPress user profile screen for users with the `Ambassador` role:
+- When editing an ambassador's profile, you will see a new field: **Mailerlite Group IDs**.
+- You can enter a single ID or a comma-separated list of IDs (e.g., `12345678, 87654321`).
+- These IDs correspond to the Mailerlite groups associated with the ambassador's specific mailing-signup tags.
+
+### 3. Order Attribution Logic Updated
+The `maybe_attribute_order()` function has been updated to prioritize the Mailerlite API:
+1. It looks up the customer's billing email.
+2. It sends a request to the Mailerlite API (`connect.mailerlite.com/api/subscribers/{email}?include=groups`) using the API token from the settings.
+3. If the customer exists and belongs to any Mailerlite groups, the plugin compares those group IDs against all ambassadors' stored **Mailerlite Group IDs**.
+4. If a match is found, the order is attributed to that ambassador and the commission is calculated.
+5. If no match is found (or if the API token is not set), the plugin falls back to the original method: checking the applied coupon codes.
+
+> [!TIP]
+> **API Version Information**
+> Mailerlite has a legacy API (v2) and a current API (v3). This integration uses **API v3** (the standard for all new Mailerlite accounts). You can generate your API token in your Mailerlite dashboard under **Integrations -> API**.
+
+## How to test this
+1. Go to **WooCommerce -> Settings -> Affiliation** and enter your Mailerlite API v3 token.
+2. Edit an **Ambassador**'s WordPress profile and enter a valid Mailerlite Group ID.
+3. Make sure a customer is subscribed to that specific Mailerlite Group.
+4. Place an order on your WooCommerce store using that customer's email address (without using any ambassador coupons).
+5. Once the order is marked as `Completed`, verify that the commission was correctly attributed to the ambassador in the **Ambassador Payouts** screen.
