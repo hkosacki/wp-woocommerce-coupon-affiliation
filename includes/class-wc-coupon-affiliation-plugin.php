@@ -10,8 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-query.php';
-require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-admin.php';
+require_once __DIR__ . '/class-wc-coupon-affiliation-mailerlite-signup.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-ambassador-profile.php';
+require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-user-mailerlite-panel.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-tracking.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-order-admin.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-ambassador-dashboard.php';
@@ -22,11 +23,12 @@ require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-payouts-ad
  */
 final class WC_Coupon_Affiliation_Plugin {
 
-	public const META_ASSIGNED_AMBASSADOR = '_assigned_ambassador_id';
-
 	public const ROLE_AMBASSADOR = 'ambassador';
 
-	public const META_USER_MAILERLITE_GROUP_IDS = '_ambassador_mailerlite_group_ids';
+	/**
+	 * Comma-separated tokens matching MailerLite signup form name (“through” line).
+	 */
+	public const META_USER_MAILERLITE_SIGNUP_MATCH = '_ambassador_mailerlite_signup_match';
 
 	/** User meta: commission percent (0–100). Empty means use default at attribution time. */
 	public const META_USER_AMBASSADOR_COMMISSION_RATE = '_ambassador_commission_rate';
@@ -151,8 +153,8 @@ final class WC_Coupon_Affiliation_Plugin {
 	}
 
 	private function __construct() {
-		new WC_Coupon_Affiliation_Admin();
 		new WC_Coupon_Affiliation_Ambassador_Profile();
+		new WC_Coupon_Affiliation_User_Mailerlite_Panel();
 		new WC_Coupon_Affiliation_Order_Tracking();
 		new WC_Coupon_Affiliation_Order_Admin();
 		new WC_Coupon_Affiliation_Ambassador_Dashboard();

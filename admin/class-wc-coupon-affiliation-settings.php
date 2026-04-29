@@ -33,7 +33,7 @@ if ( class_exists( 'WC_Settings_Page', false ) ) {
 				array(
 					'title' => __( 'Mailerlite Integration', 'woocommerce-coupon-affiliation' ),
 					'type'  => 'title',
-					'desc'  => __( 'Configure Mailerlite API to automatically attribute orders based on a customer\'s Mailerlite groups/tags.', 'woocommerce-coupon-affiliation' ),
+					'desc'  => __( 'Configure MailerLite API (v3) so completed orders can be attributed from each customer’s MailerLite signup form—the same source shown as “through” on the subscriber in MailerLite.', 'woocommerce-coupon-affiliation' ),
 					'id'    => 'wcca_mailerlite_options',
 				),
 				array(

@@ -1,8 +1,6 @@
 <?php
 /**
- * Order completion: attribute ambassador from coupons and store commission.
- *
- * Uses the first applied coupon (in order) that has a valid assigned Ambassador.
+ * Order completion: attribute ambassador from MailerLite signup source and store commission.
  *
  * @package WooCommerce_Coupon_Affiliation
  */
@@ -85,11 +83,7 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 			return;
 		}
 
-		$ambassador_user_id = $this->resolve_ambassador_from_mailerlite( $order );
-
-		if ( ! $ambassador_user_id ) {
-			$ambassador_user_id = $this->resolve_ambassador_from_coupons( $order );
-		}
+		$ambassador_user_id = $this->resolve_ambassador_from_mailerlite_signup( $order );
 
 		// Net commission base: subtotal minus order discounts (excludes tax and shipping for typical WC orders).
 		$net_base = max( 0.0, (float) $order->get_subtotal() - (float) $order->get_discount_total() );
@@ -148,9 +142,9 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 			$order_ref
 		);
 
-		$currency = $order->get_currency();
-		$net_html = wc_price( $net_base, array( 'currency' => $currency ) );
-		$comm_amt = (float) wc_format_decimal( $commission_decimal );
+		$currency  = $order->get_currency();
+		$net_html  = wc_price( $net_base, array( 'currency' => $currency ) );
+		$comm_amt  = (float) wc_format_decimal( $commission_decimal );
 		$comm_html = wc_price( $comm_amt, array( 'currency' => $currency ) );
 
 		$account_url = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'myaccount' ) : '';
@@ -168,7 +162,7 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 			'',
 			sprintf(
 				/* translators: %s: order number */
-				__( 'Great news! An order (#%s) using your coupon has been completed.', 'woocommerce-coupon-affiliation' ),
+				__( 'Great news! An order (#%s) attributed to you has been completed.', 'woocommerce-coupon-affiliation' ),
 				$order_ref
 			),
 			sprintf(
@@ -219,46 +213,11 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 	}
 
 	/**
-	 * First coupon code with a valid ambassador assignment wins.
+	 * Match billing email to MailerLite signup form and ambassador-configured tokens.
 	 */
-	private function resolve_ambassador_from_coupons( WC_Order $order ): int {
-		$codes = $order->get_coupon_codes();
-		if ( empty( $codes ) ) {
-			return 0;
-		}
-
-		foreach ( $codes as $code ) {
-			if ( ! is_string( $code ) || '' === $code ) {
-				continue;
-			}
-
-			$coupon_id = function_exists( 'wc_get_coupon_id_by_code' ) ? absint( wc_get_coupon_id_by_code( $code ) ) : 0;
-			if ( ! $coupon_id ) {
-				continue;
-			}
-
-			$uid = absint( get_post_meta( $coupon_id, WC_Coupon_Affiliation_Plugin::META_ASSIGNED_AMBASSADOR, true ) );
-			if ( ! $uid ) {
-				continue;
-			}
-
-			$user = get_userdata( $uid );
-			if ( ! $user || ! in_array( WC_Coupon_Affiliation_Plugin::ROLE_AMBASSADOR, (array) $user->roles, true ) ) {
-				continue;
-			}
-
-			return $uid;
-		}
-
-		return 0;
-	}
-
-	/**
-	 * Matches customer billing email to Mailerlite subscriber groups and checks if any ambassador maps to them.
-	 */
-	private function resolve_ambassador_from_mailerlite( WC_Order $order ): int {
+	private function resolve_ambassador_from_mailerlite_signup( WC_Order $order ): int {
 		$api_token = get_option( 'wcca_mailerlite_api_token', '' );
-		if ( empty( $api_token ) ) {
+		if ( ! is_string( $api_token ) || '' === trim( $api_token ) ) {
 			return 0;
 		}
 
@@ -267,69 +226,7 @@ final class WC_Coupon_Affiliation_Order_Tracking {
 			return 0;
 		}
 
-		$url = sprintf( 'https://connect.mailerlite.com/api/subscribers/%s?include=groups', urlencode( $email ) );
-
-		$response = wp_remote_get(
-			$url,
-			array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $api_token,
-					'Accept'        => 'application/json',
-				),
-				'timeout' => 10,
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			return 0;
-		}
-
-		$status_code = wp_remote_retrieve_response_code( $response );
-		if ( 200 !== $status_code ) {
-			return 0;
-		}
-
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( empty( $data['data']['groups'] ) || ! is_array( $data['data']['groups'] ) ) {
-			return 0;
-		}
-
-		$subscriber_group_ids = array();
-		foreach ( $data['data']['groups'] as $group ) {
-			if ( isset( $group['id'] ) ) {
-				$subscriber_group_ids[] = (string) $group['id'];
-			}
-		}
-
-		if ( empty( $subscriber_group_ids ) ) {
-			return 0;
-		}
-
-		$users = get_users(
-			array(
-				'role'   => WC_Coupon_Affiliation_Plugin::ROLE_AMBASSADOR,
-				'fields' => 'ID',
-			)
-		);
-
-		foreach ( $users as $user_id ) {
-			$meta_raw = get_user_meta( $user_id, WC_Coupon_Affiliation_Plugin::META_USER_MAILERLITE_GROUP_IDS, true );
-			if ( empty( $meta_raw ) || ! is_string( $meta_raw ) ) {
-				continue;
-			}
-
-			$ambassador_group_ids = array_map( 'trim', explode( ',', $meta_raw ) );
-
-			foreach ( $ambassador_group_ids as $amb_group_id ) {
-				if ( ! empty( $amb_group_id ) && in_array( $amb_group_id, $subscriber_group_ids, true ) ) {
-					return (int) $user_id;
-				}
-			}
-		}
-
-		return 0;
+		return WC_Coupon_Affiliation_Mailerlite_Signup::resolve_ambassador_user_id( $api_token, $email );
 	}
 
 	/**

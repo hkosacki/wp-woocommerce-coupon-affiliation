@@ -321,11 +321,10 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 		echo '<th>' . esc_html__( 'Net value', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '<th>' . esc_html__( 'Commission', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '<th>' . esc_html__( 'Payout status', 'woocommerce-coupon-affiliation' ) . '</th>';
-		echo '<th>' . esc_html__( 'Coupon code(s)', 'woocommerce-coupon-affiliation' ) . '</th>';
 		echo '</tr></thead><tbody>';
 
 		if ( empty( $slice ) ) {
-			echo '<tr><td colspan="6">' . esc_html__( 'No orders for this month.', 'woocommerce-coupon-affiliation' ) . '</td></tr>';
+			echo '<tr><td colspan="5">' . esc_html__( 'No orders for this month.', 'woocommerce-coupon-affiliation' ) . '</td></tr>';
 		} else {
 			foreach ( $slice as $order ) {
 				$this->render_table_row( $order );
@@ -368,9 +367,6 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 			? '<span class="wcca-payout-void">' . esc_html( $payout_label ) . '</span>'
 			: esc_html( $payout_label );
 
-		$coupons = $order->get_coupon_codes();
-		$coupon_str = ! empty( $coupons ) ? esc_html( implode( ', ', $coupons ) ) : '&mdash;';
-
 		echo '<tr>';
 		echo '<td data-title="' . esc_attr__( 'Order number', 'woocommerce-coupon-affiliation' ) . '">' . esc_html( $num ) . '</td>';
 		echo '<td data-title="' . esc_attr__( 'Order date / time', 'woocommerce-coupon-affiliation' ) . '">' . esc_html( $dt ) . '</td>';
@@ -380,7 +376,6 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $payout_cell built from escaped parts.
 		echo $payout_cell;
 		echo '</td>';
-		echo '<td data-title="' . esc_attr__( 'Coupon code(s)', 'woocommerce-coupon-affiliation' ) . '">' . $coupon_str . '</td>';
 		echo '</tr>';
 	}
 }
