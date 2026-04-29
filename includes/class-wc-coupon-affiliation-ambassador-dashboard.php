@@ -159,7 +159,7 @@ final class WC_Coupon_Affiliation_Ambassador_Dashboard {
 			'return'     => 'objects',
 		);
 
-		$orders = wc_get_orders( $args );
+		$orders = WC_Coupon_Affiliation_Order_Query::wc_get_orders_with_meta_query_compat( $args );
 		if ( ! is_array( $orders ) ) {
 			return array();
 		}

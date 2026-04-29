@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-wc-coupon-affiliation-order-query.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-admin.php';
 require_once dirname( __DIR__ ) . '/admin/class-wc-coupon-affiliation-ambassador-profile.php';
 require_once __DIR__ . '/class-wc-coupon-affiliation-order-tracking.php';

@@ -119,7 +119,7 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 
 		$offset = 0;
 		while ( $scanned < self::SCAN_MAX ) {
-			$orders = wc_get_orders(
+			$orders = WC_Coupon_Affiliation_Order_Query::wc_get_orders_with_meta_query_compat(
 				array(
 					'limit'      => self::BATCH_SIZE,
 					'offset'     => $offset,
@@ -242,7 +242,7 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 		$offset = 0;
 
 		while ( count( $out ) < self::TRANSACTIONS_CAP && $offset < self::SCAN_MAX ) {
-			$orders = wc_get_orders(
+			$orders = WC_Coupon_Affiliation_Order_Query::wc_get_orders_with_meta_query_compat(
 				array(
 					'limit'      => self::BATCH_SIZE,
 					'offset'     => $offset,
@@ -302,7 +302,7 @@ final class WC_Coupon_Affiliation_Payouts_Admin {
 		$scanned = 0;
 
 		while ( $scanned < self::SCAN_MAX ) {
-			$orders = wc_get_orders(
+			$orders = WC_Coupon_Affiliation_Order_Query::wc_get_orders_with_meta_query_compat(
 				array(
 					'limit'      => self::BATCH_SIZE,
 					'offset'     => $offset,
